@@ -15,8 +15,12 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+use std::error::Error;
+use std::process;
+use std::path::{Path,PathBuf};
 use std::env;
 use getopts::Options;
+use apperror::AppError;
 
 mod boards;
 mod apperror;
@@ -24,6 +28,11 @@ mod apperror;
 fn print_usage(program: &str, opts: Options) {
 	let brief = format!("rune - bless and write Haiku mmc images\nUsage: {} [options] <output>", program);
 	print!("{}", opts.usage(&brief));
+}
+
+fn flag_error(program: &str, opts: Options, error: &str) {
+	print!("Error: {}\n\n", error);
+	print_usage(&program, opts);
 }
 
 fn main() {
@@ -43,6 +52,7 @@ fn main() {
 		}
 	};
 
+	// Validate flags
 	if matches.opt_present("h") {
 		print_usage(&program, opts);
 		return;
@@ -51,16 +61,37 @@ fn main() {
 		return;
 	}
 
-	// Validate
-	if !matches.opt_present("b") {
-		print!("ERROR: Target board not provided!\n\n");
+	let output_file = if !matches.free.is_empty() {
+		Path::new(&matches.free[0])
+	} else {
 		print_usage(&program, opts);
-		return;
-	}
-	if !matches.opt_present("i") {
-		print!("ERROR: Source OS image not provided!\n\n");
-		print_usage(&program, opts);
-		return;
-	}
-	println!("Hello!")
+		process::exit(1);
+	};
+
+	let board_id = match matches.opt_str("b") {
+		Some(x) => x,
+		None => {
+			flag_error(&program, opts, "Target board not provided!");
+			process::exit(1);
+		},
+	};
+	let board = match boards::get_board(board_id) {
+		Ok(x) => x,
+		Err(AppError::NotFound) => {
+			flag_error(&program, opts, "Unknown target board!");
+			process::exit(1);
+		},
+		Err(e) => {
+			flag_error(&program, opts, e.description());
+			process::exit(1);
+		},
+	};
+	let source_image = match matches.opt_str("i") {
+		Some(x) => x,
+		None => {
+			flag_error(&program, opts, "Source OS image not provided!");
+			process::exit(1);
+		},
+	};
+	print!("Preparing {} image for {}...\n", output_file.display(), board.name)
 }
