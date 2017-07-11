@@ -93,5 +93,5 @@ fn main() {
 			process::exit(1);
 		},
 	};
-	print!("Preparing {} image for {}...\n", output_file.display(), board.name)
+	print!("Preparing {} image for {}...\n", source_image, board.name)
 }
