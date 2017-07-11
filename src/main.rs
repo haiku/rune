@@ -10,6 +10,11 @@
 
 extern crate getopts;
 
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
 use std::env;
 use getopts::Options;
 
@@ -22,12 +27,12 @@ fn print_usage(program: &str, opts: Options) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
+	let args: Vec<String> = env::args().collect();
+	let program = args[0].clone();
 	let mut opts = Options::new();
 	opts.optopt("b", "board", "target board", "<board>");
-	opts.optopt("i", "image", "mmc image", "<image>");
-    opts.optflag("l", "list", "list supported target boards");
+	opts.optopt("i", "image", "source OS image", "<image>");
+	opts.optflag("l", "list", "list supported target boards");
 	opts.optflag("h", "help", "print this help");
 
 	let matches = match opts.parse(&args[1..]) {
@@ -42,9 +47,20 @@ fn main() {
 		print_usage(&program, opts);
 		return;
 	} else if matches.opt_present("l") {
-        boards::print();
-        return;
-    }
+		boards::print("arm".to_string());
+		return;
+	}
 
-    println!("Hello!")
+	// Validate
+	if !matches.opt_present("b") {
+		print!("ERROR: Target board not provided!\n\n");
+		print_usage(&program, opts);
+		return;
+	}
+	if !matches.opt_present("i") {
+		print!("ERROR: Source OS image not provided!\n\n");
+		print_usage(&program, opts);
+		return;
+	}
+	println!("Hello!")
 }

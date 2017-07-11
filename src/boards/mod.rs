@@ -8,51 +8,70 @@
  *   Alexander von Gluck IV <kallisti5@unixzen.com>
  */
 
-#[derive(Clone, Debug)]
+extern crate serde_json;
+extern crate reqwest;
+
+use std::error::Error;
+use apperror::AppError;
+
+use std::io::Read;
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Board {
-    pub id:   &'static str,
-    pub soc:  &'static str,
-    pub name: &'static str,
-    pub arch: &'static str,
-    pub files: &'static [&'static str],
+	pub arch: String,
+	pub id:   String,
+	pub soc:  String,
+	pub name: String,
+	pub files: Vec<String>,
 }
 
-const KNOWN_BOARDS: [Board; 2] = [
-    Board {
-        id:   "rpi2",
-        soc:  "BCM2836",
-        name: "Raspberry Pi 2",
-        arch: "arm",
-        files: &["http://google.com"],
-    },
-    Board {
-        id:   "rpi3",
-        soc:  "BCM2837",
-        name: "Raspberry Pi 3",
-        arch: "arm",
-        files: &["http://google.com"],
-    },
-];
+pub fn get_boards(uri: String) -> Result<Vec<Board>, AppError> {
+	let mut resp = reqwest::get(uri.as_str()).unwrap();
+	if !resp.status().is_success() {
+		return Err(AppError::NotFound);
+	}
 
-pub fn available(arch: String) -> Option<Vec<Board>> {
-    let mut results: Vec<Board> = Vec::new();
-    for board in KNOWN_BOARDS.iter() {
-        if board.arch == &arch {
-            results.push(board.clone());
-        }
-    }
-    return Some(results);
+	let mut content = String::new();
+	resp.read_to_string(&mut content);
+
+	//let mut results: Vec<Board> = Vec::new();
+	let mut results = serde_json::from_str(&content)?;
+	return Ok(results);
 }
 
-pub fn print() {
-    let arm_boards = match available("arm".to_string()) {
-        Some(m) => { m },
-        None => return,
-    };
-    print!("arm\n===\n");
-    print!("  {:10} {:10} {:20}\n", "Board", "SOC", "Name");
-    for board in arm_boards {
-        print!("  {:10} {:10} {:20}\n", board.id, board.soc, board.name);
-    }
+pub fn get_arch(arch: String) -> Result<Vec<Board>, AppError> {
+	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
+	let boards = get_boards(uri)?;
+	let mut results: Vec<Board> = Vec::new();
+	for i in boards {
+		if i.arch == arch {
+			results.push(i);
+		}
+	}
+	return Ok(results)
+}
+
+pub fn get_board(board: String) -> Result<Board, AppError> {
+	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
+	let boards = get_boards(uri)?;
+	for i in boards {
+		if i.id == board {
+			return Ok(i);
+		}
+	}
+	return Err(AppError::NotFound);
+}
+
+pub fn print(arch: String) {
+	print!("{}\n===\n", arch);
+	let arch_boards = match get_arch(arch) {
+		Ok(m) => { m },
+		Err(_) => { println!("  (None)"); return },
+	};
+	print!("  {:10} {:10} {:20}\n", "Board", "SOC", "Name");
+	for board in arch_boards {
+		print!("  {:10} {:10} {:20}\n", board.id, board.soc, board.name);
+	}
 }
 
