@@ -24,6 +24,8 @@ use apperror::AppError;
 
 mod boards;
 mod apperror;
+mod mbr;
+
 
 fn print_usage(program: &str, opts: Options) {
 	let brief = format!("rune - bless and write Haiku mmc images\nUsage: {} [options] <output>", program);
@@ -93,5 +95,6 @@ fn main() {
 			process::exit(1);
 		},
 	};
+	let partitions = mbr::parse(source_image.clone());
 	print!("Preparing {} image for {}...\n", source_image, board.name)
 }
