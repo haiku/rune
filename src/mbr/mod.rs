@@ -53,13 +53,13 @@ pub fn read_partition(path: String, index: u8) -> Result<Partition, AppError> {
 
 	let new_part = Partition {
 		p_status: read1(b),
-		p_cyl_begin: read1(b),
 		p_head_begin: read1(b),
 		p_sect_begin: read1(b),
+		p_cyl_begin: read1(b),
 		p_type: read1(b),
-		p_cyl_end: read1(b),
 		p_head_end: read1(b),
 		p_sect_end: read1(b),
+		p_cyl_end: read1(b),
 		p_lba: read4(b),
 		p_size: read4(b),
 	};
