@@ -1,6 +1,14 @@
 
+/*
+ * Copyright, 2017, Alexander von Gluck IV. All rights reserved.
+ * Released under the terms of the MIT license.
+ *
+ * Authors:
+ *   Alexander von Gluck IV <kallisti5@unixzen.com>
+ */
+
+
 use std::path::Path;
-use std::error::Error;
 use std::fs::File;
 use std::io::{Read,SeekFrom};
 use std::io::prelude::*;
@@ -8,42 +16,72 @@ use std::io::prelude::*;
 use apperror::AppError;
 
 // Start +446
-pub struct partition {
-	pub p_status: u8,	  // 1 byte
-	pub p_chs_begin: u32,  // 3 byte
-	pub p_type: u8,		// 1 byte
-	pub p_chs_end: u32,	// 3 byte
-	pub p_lba: u32,		// 4 byte
-	pub p_size: u32,	   // 4 byte
+#[derive(Debug, Clone)]
+pub struct Partition {
+	pub p_status: u8,
+	pub p_cyl_begin: u8,
+	pub p_head_begin: u8,
+	pub p_sect_begin: u8,
+	pub p_type: u8,
+	pub p_cyl_end: u8,
+	pub p_head_end: u8,
+	pub p_sect_end: u8,
+	pub p_lba: u32,
+	pub p_size: u32,
 }
 
-pub fn read_partition(path: String, index: u8) -> Result<partition, AppError> {
-	let mut file = File::open(&Path::new(&path))?;
-	print!("{}\n", index);
+fn read1<R: Read>(r: &mut R) -> u8 {
+	let mut buf = [0];
+	r.read(&mut buf).unwrap();
+	buf[0]
+}
+
+fn read4<R: Read>(r: &mut R) -> u32 {
+	let mut buf = [0, 0, 0, 0];
+	r.read(&mut buf).unwrap();
+	(buf[0] as u32) << 24 | (buf[1] as u32) << 16 | (buf[2] as u32) << 8 | (buf[3] as u32)
+}
+
+pub fn read_partition(path: String, index: u8) -> Result<Partition, AppError> {
+	let mut f = File::open(&Path::new(&path))?;
 	assert!(index < 4);
 
-	let mut new_part: partition;
-	let mut position: u64 = 446 + (16 * (index as u64));
+	let position: u64 = 446 + (16 * (index as u64));
 
-	file.seek(SeekFrom::Start(position))?;
-	new_part.p_status = 100;
-	new_part.p_chs_begin = 0;
-	new_part.p_type = 0;
-	new_part.p_chs_end = 0;
-	new_part.p_lba = 0;
-	new_part.p_size = 0;
-	//file.read(&mut new_part.p_status)?;
+	f.seek(SeekFrom::Start(position))?;
+	let b = &mut f;
 
-	//return Ok(new_part);
-	return Err(AppError::NotFound);
+	let new_part = Partition {
+		p_status: read1(b),
+		p_cyl_begin: read1(b),
+		p_head_begin: read1(b),
+		p_sect_begin: read1(b),
+		p_type: read1(b),
+		p_cyl_end: read1(b),
+		p_head_end: read1(b),
+		p_sect_end: read1(b),
+		p_lba: read4(b),
+		p_size: read4(b),
+	};
+
+	return Ok(new_part);
 }
 
-pub fn parse(path: String) -> Result<Vec<partition>, AppError> {
-	let mut partitions: Vec<partition> = Vec::new();
+pub fn parse(path: String) -> Result<Vec<Partition>, AppError> {
+	let mut partitions: Vec<Partition> = Vec::new();
 
 	for i in [0,1,2,3].iter() {
 		partitions.push(read_partition(path.clone(), *i)?);
 	}
 
 	return Ok(partitions);
+}
+
+pub fn dump(part: Partition) {
+	print!(" status:     {}\n", part.p_status);
+	print!(" CHS begin:  {} {} {}\n", part.p_cyl_begin, part.p_head_begin, part.p_sect_begin);
+	print!(" type:       {}\n", part.p_type);
+	print!(" CHS end:    {} {} {}\n", part.p_cyl_end, part.p_head_end, part.p_sect_end);
+	print!(" lba:        {}\n", part.p_lba);
+	print!(" size:       {}\n", part.p_size);
 }

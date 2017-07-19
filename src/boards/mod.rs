@@ -36,7 +36,7 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, AppError> {
 	resp.read_to_string(&mut content);
 
 	//let mut results: Vec<Board> = Vec::new();
-	let mut results = serde_json::from_str(&content)?;
+	let results = serde_json::from_str(&content)?;
 	return Ok(results);
 }
 

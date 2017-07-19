@@ -95,6 +95,22 @@ fn main() {
 			process::exit(1);
 		},
 	};
-	let partitions = mbr::parse(source_image.clone());
+	let partitions = match mbr::parse(source_image.clone()) {
+		Ok(x) => x,
+		Err(e) => {
+			print!("Error: {}\n", e);
+			process::exit(1);
+		},
+	};
+
+	print!("Partition 0:\n");
+	mbr::dump(partitions[0].clone());
+	print!("Partition 1:\n");
+	mbr::dump(partitions[1].clone());
+	print!("Partition 2:\n");
+	mbr::dump(partitions[2].clone());
+	print!("Partition 3:\n");
+	mbr::dump(partitions[3].clone());
+
 	print!("Preparing {} image for {}...\n", source_image, board.name)
 }
