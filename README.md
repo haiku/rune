@@ -12,7 +12,6 @@ Features
   * Injects any needed vendor specific boot binaries from remote sources.
   * Writes directly to an SD card, or to a new image file.
 
-
 Why is this needed?
 ----
 
@@ -31,6 +30,15 @@ Why Rust?
   * Cross-platform. Rune is designed to be used by end-users across multiple operating systems.
   * Easy json parsing and HTTP GET's without requiring a large number of libraries.
 
+Example Usage
+-------------
+
+  * **Listing available boards:** ```rune -l```
+  * **Prepare an SD card for the Raspberry Pi 2:** ```rune -b rpi2 -i haiku-arm.mmc /dev/sdc```
+  * **Write the prepared disk image to a file:** ```rune -b rpi2 -i haiku-arm.mmc /home/alex/haiku-arm-rpi2.mmc```
+
 Credit
 ------
-Thanks to Fedora for creating fedora-arm-installer which was the inspiration for this tool.
+
+  * Thanks to Fedora for creating fedora-arm-installer which was the inspiration for this tool.
+  * Thanks to the great Rust folks for helping out!
