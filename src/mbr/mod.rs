@@ -39,7 +39,9 @@ fn read1<R: Read>(r: &mut R) -> u8 {
 fn read4<R: Read>(r: &mut R) -> u32 {
 	let mut buf = [0, 0, 0, 0];
 	r.read(&mut buf).unwrap();
-	(buf[0] as u32) << 24 | (buf[1] as u32) << 16 | (buf[2] as u32) << 8 | (buf[3] as u32)
+	// TODO: Endian issues on non-x86 platforms? (maybe use byteorder crate)
+	//original: (buf[0] as u32) << 24 | (buf[1] as u32) << 16 | (buf[2] as u32) << 8 | (buf[3] as u32)
+	(buf[3] as u32) << 24 | (buf[2] as u32) << 16 | (buf[1] as u32) << 8 | (buf[0] as u32)
 }
 
 pub fn read_partition(path: String, index: u8) -> Result<Partition, AppError> {
