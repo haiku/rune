@@ -11,9 +11,8 @@
 extern crate serde_json;
 extern crate reqwest;
 
-use std::error::Error;
-use apperror::AppError;
 
+use apperror::AppError;
 use std::io::Read;
 
 
@@ -33,7 +32,7 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, AppError> {
 	}
 
 	let mut content = String::new();
-	resp.read_to_string(&mut content);
+	resp.read_to_string(&mut content)?;
 
 	//let mut results: Vec<Board> = Vec::new();
 	let results = serde_json::from_str(&content)?;

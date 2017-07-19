@@ -17,7 +17,7 @@ extern crate serde_json;
 
 use std::error::Error;
 use std::process;
-use std::path::{Path,PathBuf};
+use std::path::Path;
 use std::env;
 use getopts::Options;
 use apperror::AppError;
@@ -44,6 +44,7 @@ fn main() {
 	opts.optopt("b", "board", "target board", "<board>");
 	opts.optopt("i", "image", "source OS image", "<image>");
 	opts.optflag("l", "list", "list supported target boards");
+	opts.optflag("v", "verbose", "increase verbosity");
 	opts.optflag("h", "help", "print this help");
 
 	let matches = match opts.parse(&args[1..]) {
@@ -53,6 +54,8 @@ fn main() {
 			return;
 		}
 	};
+
+	let verbose = matches.opt_present("v");
 
 	// Validate flags
 	if matches.opt_present("h") {
@@ -103,14 +106,10 @@ fn main() {
 		},
 	};
 
-	print!("Partition 0:\n");
-	mbr::dump(partitions[0].clone());
-	print!("Partition 1:\n");
-	mbr::dump(partitions[1].clone());
-	print!("Partition 2:\n");
-	mbr::dump(partitions[2].clone());
-	print!("Partition 3:\n");
-	mbr::dump(partitions[3].clone());
+	if verbose {
+		print!("Scan partition table in source OS image...\n");
+		mbr::table_dump(partitions.clone());
+	}
 
 	print!("Preparing {} image for {}...\n", source_image, board.name)
 }
