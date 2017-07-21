@@ -9,6 +9,7 @@
  */
 
 extern crate getopts;
+extern crate mbr;
 
 #[macro_use]
 extern crate serde_derive;
@@ -21,10 +22,10 @@ use std::path::Path;
 use std::env;
 use getopts::Options;
 use apperror::AppError;
+use mbr::header;
 
 mod boards;
 mod apperror;
-mod mbr;
 
 
 fn print_usage(program: &str, opts: Options) {
@@ -98,7 +99,7 @@ fn main() {
 			process::exit(1);
 		},
 	};
-	let partitions = match mbr::parse(source_image.clone()) {
+	let partitions = match header::parse(source_image.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
@@ -108,7 +109,7 @@ fn main() {
 
 	if verbose {
 		print!("Scan partition table in source OS image...\n");
-		mbr::table_dump(partitions.clone());
+		header::table_dump(partitions.clone());
 	}
 
 	print!("Preparing {} image for {}...\n", source_image, board.name)
