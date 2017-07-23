@@ -22,7 +22,7 @@ use std::path::Path;
 use std::env;
 use getopts::Options;
 use apperror::AppError;
-use mbr::header;
+use mbr::partition;
 
 mod boards;
 mod apperror;
@@ -99,7 +99,7 @@ fn main() {
 			process::exit(1);
 		},
 	};
-	let partitions = match header::parse(source_image.clone()) {
+	let partitions = match partition::read_from_file(source_image.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
@@ -109,7 +109,7 @@ fn main() {
 
 	if verbose {
 		print!("Scan partition table in source OS image...\n");
-		header::table_dump(partitions.clone());
+		partition::table_dump(partitions.clone());
 	}
 
 	print!("Preparing {} image for {}...\n", source_image, board.name)
