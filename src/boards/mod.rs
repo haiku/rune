@@ -26,15 +26,9 @@ pub struct Board {
 }
 
 pub fn get_boards(uri: String) -> Result<Vec<Board>, AppError> {
-	let mut resp = reqwest::get(uri.as_str()).unwrap();
-	if !resp.status().is_success() {
-		return Err(AppError::NotFound);
-	}
-
+	let mut resp = reqwest::get(uri.as_str())?;
 	let mut content = String::new();
 	resp.read_to_string(&mut content)?;
-
-	//let mut results: Vec<Board> = Vec::new();
 	let results = serde_json::from_str(&content)?;
 	return Ok(results);
 }
@@ -66,11 +60,11 @@ pub fn print(arch: String) {
 	print!("{}\n===\n", arch);
 	let arch_boards = match get_arch(arch) {
 		Ok(m) => { m },
-		Err(_) => { println!("  (None)"); return },
+		Err(AppError::NotFound) => { println!("  (none)"); return },
+		Err(e) => { println!("  Error: {}", e); return },
 	};
 	print!("  {:10} {:10} {:20}\n", "Board", "SOC", "Name");
 	for board in arch_boards {
 		print!("  {:10} {:10} {:20}\n", board.id, board.soc, board.name);
 	}
 }
-

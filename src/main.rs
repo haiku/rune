@@ -18,13 +18,14 @@ extern crate serde_json;
 
 use std::error::Error;
 use std::process;
-use std::path::Path;
+use std::path::PathBuf;
 use std::env;
 use getopts::Options;
 use apperror::AppError;
 use mbr::partition;
 
 mod boards;
+mod image_tools;
 mod apperror;
 
 
@@ -52,7 +53,7 @@ fn main() {
 		Ok(m) => { m },
 		Err(f) => {
 			println!("Error: {}", f.to_string());
-			return;
+			process::exit(1);
 		}
 	};
 
@@ -64,11 +65,11 @@ fn main() {
 		return;
 	} else if matches.opt_present("l") {
 		boards::print("arm".to_string());
-		return;
+		process::exit(1);
 	}
 
 	let output_file = if !matches.free.is_empty() {
-		Path::new(&matches.free[0])
+		PathBuf::from(&matches.free[0])
 	} else {
 		print_usage(&program, opts);
 		process::exit(1);
@@ -88,12 +89,12 @@ fn main() {
 			process::exit(1);
 		},
 		Err(e) => {
-			flag_error(&program, opts, e.description());
+			println!("Error: {}", e.description());
 			process::exit(1);
 		},
 	};
 	let source_image = match matches.opt_str("i") {
-		Some(x) => x,
+		Some(x) => PathBuf::from(&x),
 		None => {
 			flag_error(&program, opts, "Source OS image not provided!");
 			process::exit(1);
@@ -112,5 +113,5 @@ fn main() {
 		partition::table_dump(partitions.clone());
 	}
 
-	print!("Preparing {} image for {}...\n", source_image, board.name)
+	image_tools::write(source_image, output_file);
 }
