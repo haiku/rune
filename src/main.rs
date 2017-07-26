@@ -100,7 +100,8 @@ fn main() {
 			process::exit(1);
 		},
 	};
-
+	print!("Creating bootable {} ({}) media.\n", board.name, board.soc);
+	print!("Writing image to {:?}...\n", output_file);
 	// Go ahead and write out base image to destination
 	let written = match image_tools::write(source_image, output_file.clone()) {
 		Ok(x) => x,
@@ -109,7 +110,9 @@ fn main() {
 			process::exit(1);
 		}
 	};
-	print!("Wrote {} bytes to {:?}\n", written, output_file);
+	if verbose {
+		print!("Wrote {} bytes to {:?}\n", written, output_file);
+	}
 
 	let partitions = match partition::read_partitions(output_file.clone()) {
 		Ok(x) => x,
@@ -123,4 +126,13 @@ fn main() {
 		print!("Scan partition table in OS image...\n");
 		partition::table_dump(partitions.clone());
 	}
+
+	let file_count = match boards::get_files(board.clone(), output_file) {
+		Ok(x) => x,
+		Err(e) => {
+			print!("Error: {}\n", e);
+			process::exit(1);
+		}
+	};
+	print!("Obtained {} boot-related files.\n", file_count);
 }

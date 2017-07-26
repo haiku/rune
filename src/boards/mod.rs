@@ -14,6 +14,7 @@ extern crate reqwest;
 
 use apperror::AppError;
 use std::io::Read;
+use std::path::PathBuf;
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -45,15 +46,31 @@ pub fn get_arch(arch: String) -> Result<Vec<Board>, AppError> {
 	return Ok(results)
 }
 
-pub fn get_board(board: String) -> Result<Board, AppError> {
+pub fn get_board(board_id: String) -> Result<Board, AppError> {
 	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	for i in boards {
-		if i.id == board {
+		if i.id == board_id {
 			return Ok(i);
 		}
 	}
 	return Err(AppError::NotFound);
+}
+
+pub fn get_files(board: Board, dest: PathBuf) -> Result<usize, AppError> {
+	let count = board.files.len();
+	if count == 0 {
+		return Err(AppError::NotFound);
+	}
+	for i in board.files {
+		print!(" + GET {}\n", i);
+		let mut resp = reqwest::get(i.as_str())?;
+
+		// TODO: Write to dest path. All we do here is read the first 1024 bytes and exit.
+		let mut buffer = [0; 1024];
+		resp.read_exact(&mut buffer)?;
+	}
+	return Ok(count);
 }
 
 pub fn print(arch: String) {
