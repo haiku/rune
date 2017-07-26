@@ -100,7 +100,18 @@ fn main() {
 			process::exit(1);
 		},
 	};
-	let partitions = match partition::read_from_file(source_image.clone()) {
+
+	// Go ahead and write out base image to destination
+	let written = match image_tools::write(source_image, output_file.clone()) {
+		Ok(x) => x,
+		Err(e) => {
+			print!("Error: {}\n", e);
+			process::exit(1);
+		}
+	};
+	print!("Wrote {} bytes to {:?}\n", written, output_file);
+
+	let partitions = match partition::read_partitions(output_file.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
@@ -109,9 +120,7 @@ fn main() {
 	};
 
 	if verbose {
-		print!("Scan partition table in source OS image...\n");
+		print!("Scan partition table in OS image...\n");
 		partition::table_dump(partitions.clone());
 	}
-
-	image_tools::write(source_image, output_file);
 }
