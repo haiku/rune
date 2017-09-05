@@ -3,7 +3,7 @@ Rune
 
 Rune is a tool to post-process Haiku raw ARM images for various target devices.
 
-[![Build Status](https://travis-ci.org/kallisti5/rune-image.svg?branch=master)](https://travis-ci.org/kallisti5/rune-image)
+[![Build Status](https://travis-ci.org/kallisti5/rune-image.svg?branch=master)](https://travis-ci.org/kallisti5/rune-image) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Features
 ---------
