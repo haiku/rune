@@ -93,25 +93,29 @@ fn main() {
 			process::exit(1);
 		},
 	};
-	let source_image = match matches.opt_str("i") {
-		Some(x) => PathBuf::from(&x),
-		None => {
-			flag_error(&program, opts, "Source OS image not provided!");
-			process::exit(1);
-		},
-	};
+
 	print!("Creating bootable {} ({}) media.\n", board.name, board.soc);
-	print!("Writing image to {:?}...\n", output_file);
-	// Go ahead and write out base image to destination
-	let written = match image_tools::write(source_image, output_file.clone()) {
-		Ok(x) => x,
-		Err(e) => {
-			print!("Error: {}\n", e);
-			process::exit(1);
-		}
-	};
-	if verbose {
-		print!("Wrote {} bytes to {:?}\n", written, output_file);
+
+	// If an input image was provided, write it out.
+	match matches.opt_str("i") {
+		Some(x) => {
+			// Go ahead and write out base image to destination
+			print!("Writing image to {:?}...\n", output_file);
+			let source_image = PathBuf::from(&x);
+			let written = match image_tools::write(source_image, output_file.clone()) {
+				Ok(x) => x,
+				Err(e) => {
+					print!("Error: {}\n", e);
+					process::exit(1);
+				}
+			};
+			if verbose {
+				print!("Wrote {} bytes to {:?}\n", written, output_file);
+			}
+		},
+		None => {
+			print!("No source image, attempting to make target media bootable.");
+		},
 	}
 
 	let partitions = match partition::read_partitions(output_file.clone()) {

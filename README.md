@@ -36,6 +36,7 @@ Example Usage
   * **Listing available boards:** ```rune -l```
   * **Prepare an SD card for the Raspberry Pi 2:** ```rune -b rpi2 -i haiku-arm.mmc /dev/sdc```
   * **Write the prepared disk image to a file:** ```rune -b rpi2 -i haiku-arm.mmc /home/alex/haiku-arm-rpi2.mmc```
+  * **Make an SD card bootable which has had Haiku dd'ed to it:** ```rune -b rpi2 /dev/sdc```
 
 Credit
 ------
