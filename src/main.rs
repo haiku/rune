@@ -20,6 +20,7 @@ use std::error::Error;
 use std::process;
 use std::path::PathBuf;
 use std::env;
+use std::io;
 use getopts::Options;
 use apperror::AppError;
 use mbr::partition;
@@ -37,6 +38,13 @@ fn print_usage(program: &str, opts: Options) {
 fn flag_error(program: &str, opts: Options, error: &str) {
 	print!("Error: {}\n\n", error);
 	print_usage(&program, opts);
+}
+
+/// Validate disk as containing Haiku and locate "boot" partition.
+fn locate_boot_partition(image: PathBuf) -> Result<partition::Partition,io::Error> {
+	let partitions = partition::read_partitions(image.clone())?;
+	// TODO: Improve detection of "boot" partition.
+	return Ok(partitions[0].clone());
 }
 
 fn main() {
@@ -114,11 +122,15 @@ fn main() {
 			}
 		},
 		None => {
-			print!("No source image, attempting to make target media bootable.");
+			print!("No source image. Attempting to make target media bootable..\n");
 		},
 	}
 
-	let partitions = match partition::read_partitions(output_file.clone()) {
+	if verbose {
+		print!("Scan partition table in OS image...\n");
+	}
+
+	let boot_partition = match locate_boot_partition(output_file.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
@@ -127,8 +139,7 @@ fn main() {
 	};
 
 	if verbose {
-		print!("Scan partition table in OS image...\n");
-		partition::table_dump(partitions.clone());
+		println!("Found: {:?}", boot_partition);
 	}
 
 	let file_count = match boards::get_files(board.clone(), output_file) {
