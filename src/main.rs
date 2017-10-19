@@ -10,6 +10,7 @@
 
 extern crate getopts;
 extern crate mbr;
+extern crate fatr;
 
 #[macro_use]
 extern crate serde_derive;
@@ -20,15 +21,14 @@ use std::error::Error;
 use std::process;
 use std::path::PathBuf;
 use std::env;
-use std::io;
 use getopts::Options;
-use apperror::AppError;
 use mbr::partition;
+use fatr::fat;
+use apperror::AppError;
 
 mod boards;
 mod image_tools;
 mod apperror;
-
 
 fn print_usage(program: &str, opts: Options) {
 	let brief = format!("rune - bless and write Haiku mmc images\nUsage: {} [options] <output>", program);
@@ -41,10 +41,27 @@ fn flag_error(program: &str, opts: Options, error: &str) {
 }
 
 /// Validate disk as containing Haiku and locate "boot" partition.
-fn locate_boot_partition(image: PathBuf) -> Result<partition::Partition,io::Error> {
-	let partitions = partition::read_partitions(image.clone())?;
-	// TODO: Improve detection of "boot" partition.
-	return Ok(partitions[0].clone());
+fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<Error>> {
+	let partitions = partition::read_partitions(disk.clone())?;
+    for (_, partition) in partitions.iter().enumerate() {
+        let sector_size = 512;
+        if partition.p_type != 12 {
+            // Ignore non-fat partitions
+            continue;
+        }
+        let image = fat::Image::from_file_offset(disk.clone(),
+            (partitions[0].p_lba as usize * sector_size), partitions[0].p_size as usize * sector_size)?;
+        let volume_id = match image.volume_label() {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if !volume_id.to_uppercase().contains("HAIKU") {
+            continue;
+        }
+        // TODO: More checks?
+	    return Ok(partition.clone());
+    }
+    return Err(From::from("no Haiku boot partitions"));
 }
 
 fn main() {

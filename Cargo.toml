@@ -11,6 +11,5 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 reqwest = "*"
-
-#[dependencies.mbr]
-#path = "/home/kallisti5/Code/mbr"
+#fatr = "*"
+fatr = { git = "https://github.com/zanesterling/fatr.git" }
