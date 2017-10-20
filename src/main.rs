@@ -22,9 +22,8 @@ use std::process;
 use std::path::PathBuf;
 use std::env;
 use getopts::Options;
-use mbr::partition;
-use fatr::fat;
 use apperror::AppError;
+use fatr::fat;
 
 mod boards;
 mod image_tools;
@@ -38,30 +37,6 @@ fn print_usage(program: &str, opts: Options) {
 fn flag_error(program: &str, opts: Options, error: &str) {
 	print!("Error: {}\n\n", error);
 	print_usage(&program, opts);
-}
-
-/// Validate disk as containing Haiku and locate "boot" partition.
-fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<Error>> {
-	let partitions = partition::read_partitions(disk.clone())?;
-    for (_, partition) in partitions.iter().enumerate() {
-        let sector_size = 512;
-        if partition.p_type != 12 {
-            // Ignore non-fat partitions
-            continue;
-        }
-        let image = fat::Image::from_file_offset(disk.clone(),
-            (partitions[0].p_lba as usize * sector_size), partitions[0].p_size as usize * sector_size)?;
-        let volume_id = match image.volume_label() {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
-        if !volume_id.to_uppercase().contains("HAIKU") {
-            continue;
-        }
-        // TODO: More checks?
-	    return Ok(partition.clone());
-    }
-    return Err(From::from("no Haiku boot partitions"));
 }
 
 fn main() {
@@ -147,12 +122,23 @@ fn main() {
 		print!("Scan partition table in OS image...\n");
 	}
 
-	let boot_partition = match locate_boot_partition(output_file.clone()) {
+	let boot_partition = match image_tools::locate_boot_partition(output_file.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
 			process::exit(1);
 		},
+	};
+
+	let sector_size = 512;
+	let image = match fat::Image::from_file_offset(output_file.clone(),
+		boot_partition.p_lba as usize * sector_size,
+		boot_partition.p_size as usize * sector_size) {
+		Ok(x) => x,
+		Err(e) => {
+			print!("Error: {}\n", e);
+			process::exit(1);
+		}
 	};
 
 	if verbose {
