@@ -8,8 +8,6 @@
  *   Alexander von Gluck IV <kallisti5@unixzen.com>
  */
 
-
-use apperror::AppError;
 use std::error::Error;
 use std::path::PathBuf;
 use std::io;
@@ -17,12 +15,10 @@ use std::fs;
 use fatr::fat;
 use mbr::partition;
 
-
 /// Write file at source to dest
 pub fn write(source: PathBuf, dest: PathBuf) -> io::Result<u64> {
 	return fs::copy(source.as_path(), dest.as_path());
 }
-
 
 /// Validate disk as containing Haiku and locate "boot" partition.
 pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<Error>> {
@@ -47,3 +43,4 @@ pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<E
 	}
 	return Err(From::from("no Haiku boot partitions"));
 }
+

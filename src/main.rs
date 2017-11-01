@@ -11,6 +11,11 @@
 extern crate getopts;
 extern crate mbr;
 extern crate fatr;
+extern crate reqwest;
+extern crate tempdir;
+extern crate url;
+extern crate itertools;
+extern crate indicatif;
 
 #[macro_use]
 extern crate serde_derive;
@@ -19,24 +24,109 @@ extern crate serde_json;
 
 use std::error::Error;
 use std::process;
-use std::path::PathBuf;
 use std::env;
+use std::path::PathBuf;
+use std::io::Read;
+use std::io;
+use std::fs::File;
 use getopts::Options;
 use apperror::AppError;
 use fatr::fat;
+use tempdir::TempDir;
+use url::Url;
+use indicatif::{ProgressBar,ProgressStyle};
+
+use itertools::Itertools;
 
 mod boards;
 mod image_tools;
 mod apperror;
 
 fn print_usage(program: &str, opts: Options) {
-	let brief = format!("rune - bless and write Haiku mmc images\nUsage: {} [options] <output>", program);
+	let brief = format!("rune - write bootable ARM Haiku mmc images\nUsage: {} [options] <output>", program);
 	print!("{}", opts.usage(&brief));
 }
 
 fn flag_error(program: &str, opts: Options, error: &str) {
 	print!("Error: {}\n\n", error);
 	print_usage(&program, opts);
+}
+
+fn place_files(board: boards::Board, fatimage: &mut fat::Image, steps: u32) -> Result<u32, Box<Error>> {
+	let temp_dir = TempDir::new("rune")?;
+	let count = board.files.len() as u32;
+	if count == 0 {
+		return Err(From::from("No files found for board!"));
+	}
+	let bar = ProgressBar::new((count * 2) as u64);
+	bar.set_style(ProgressStyle::default_bar()
+		.template("{prefix} [{bar:40.cyan/blue}] {msg:.bold.dim}")
+		.progress_chars("#>-"));
+	bar.set_prefix(&format!("[{}/{}] Provisioning filesystem...", steps, steps));
+	for i in board.files {
+		let url = Url::parse(i.as_str())?;
+		let filename = match url.path_segments() {
+			Some(x) => x.last().unwrap(),
+			None => return Err(From::from(format!("Invalid URL {}", i))),
+		};
+
+		bar.set_message(&format!("Downloading: {}", filename));
+		bar.inc(1);
+
+		// Don't overwrite a preexisting file.
+		if let Ok(_) = fatimage.get_file_entry(filename.clone().to_string()) {
+			//println!("  Skipping {} since it already exists in image.", i);
+			continue;
+		}
+
+		//println!("  GET {} {:?}", url, filename);
+		let file_path = temp_dir.path().join(filename);
+
+		{
+			// Download file per manifest to temporary path
+			let mut resp = reqwest::get(url.clone())?;
+			if !resp.status().is_success() {
+				return Err(From::from(format!("Error obtaining {}", i)));
+			}
+			let mut new_file = File::create(file_path.clone())?;
+			io::copy(&mut resp, &mut new_file)?;
+			new_file.sync_all()?;
+		}
+
+		bar.set_message(&format!("Writing: {}", filename));
+		bar.inc(1);
+
+		let file = File::open(file_path.clone())?;
+		let metadata = file.metadata()?;
+
+		// Create a root dir entry.
+		let (entry, index) =
+			fatimage.create_file_entry(filename.to_string(), metadata.len() as u32)?;
+
+		// Get free FAT entries, fill sectors with file data.
+		for chunk in &file.bytes().chunks(fatimage.sector_size()) {
+			let chunk = chunk
+				.map(|b_res| b_res.unwrap_or(0))
+				.collect::<Vec<_>>();
+
+			// Get free sector.
+			let entry_index: usize;
+			match fatimage.get_free_fat_entry() {
+				Some(i) => entry_index = i,
+				None => {
+					// TODO: Remove entries written so far.
+					panic!("image ran out of space while writing file")
+				},
+			}
+
+			// Write chunk.
+			fatimage.write_data_sector(entry_index, &chunk)?;
+		}
+
+		fatimage.save_file_entry(entry, index)?;
+	}
+	bar.finish();
+	return Ok(count);
 }
 
 fn main() {
@@ -46,7 +136,6 @@ fn main() {
 	opts.optopt("b", "board", "target board", "<board>");
 	opts.optopt("i", "image", "source OS image", "<image>");
 	opts.optflag("l", "list", "list supported target boards");
-	opts.optflag("v", "verbose", "increase verbosity");
 	opts.optflag("h", "help", "print this help");
 
 	let matches = match opts.parse(&args[1..]) {
@@ -56,8 +145,6 @@ fn main() {
 			process::exit(1);
 		}
 	};
-
-	let verbose = matches.opt_present("v");
 
 	// Validate flags
 	if matches.opt_present("h") {
@@ -94,32 +181,28 @@ fn main() {
 		},
 	};
 
-	print!("Creating bootable {} ({}) media.\n", board.name, board.soc);
+	let mut steps = 2;
+	if matches.opt_present("i") {
+		steps = 3;
+	}
+
+	println!("[1/{}] Calculating dependencies for {} ({}) media...", steps, board.name, board.soc);
 
 	// If an input image was provided, write it out.
 	match matches.opt_str("i") {
 		Some(x) => {
 			// Go ahead and write out base image to destination
-			print!("Writing image to {:?}...\n", output_file);
+			println!("[2/{}] Writing Haiku to {:?}...", steps, output_file);
 			let source_image = PathBuf::from(&x);
-			let written = match image_tools::write(source_image, output_file.clone()) {
+			match image_tools::write(source_image, output_file.clone()) {
 				Ok(x) => x,
 				Err(e) => {
 					print!("Error: {}\n", e);
 					process::exit(1);
 				}
 			};
-			if verbose {
-				print!("Wrote {} bytes to {:?}\n", written, output_file);
-			}
 		},
-		None => {
-			print!("No source image. Attempting to make target media bootable..\n");
-		},
-	}
-
-	if verbose {
-		print!("Scan partition table in OS image...\n");
+		None => { },
 	}
 
 	let boot_partition = match image_tools::locate_boot_partition(output_file.clone()) {
@@ -131,7 +214,7 @@ fn main() {
 	};
 
 	let sector_size = 512;
-	let image = match fat::Image::from_file_offset(output_file.clone(),
+	let mut image = match fat::Image::from_file_offset(output_file.clone(),
 		boot_partition.p_lba as usize * sector_size,
 		boot_partition.p_size as usize * sector_size) {
 		Ok(x) => x,
@@ -141,16 +224,19 @@ fn main() {
 		}
 	};
 
-	if verbose {
-		println!("Found: {:?}", boot_partition);
-	}
-
-	let file_count = match boards::get_files(board.clone(), output_file) {
-		Ok(x) => x,
+	let count = match place_files(board.clone(), &mut image, steps) {
+		Ok(i) => i,
 		Err(e) => {
 			print!("Error: {}\n", e);
 			process::exit(1);
 		}
 	};
-	print!("Obtained {} boot-related files.\n", file_count);
+	print!("Obtained {} boot-related files.\n", count);
+	match image.save(output_file.clone()) {
+		Ok(_) => {},
+		Err(e) => {
+			print!("Error: {}\n", e);
+			process::exit(1);
+		}
+	};
 }
