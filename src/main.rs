@@ -60,7 +60,8 @@ fn place_files(board: boards::Board, fatimage: &mut fat::Image, steps: u32) -> R
 	}
 	let bar = ProgressBar::new((count * 2) as u64);
 	bar.set_style(ProgressStyle::default_bar()
-		.template("{prefix} [{bar:40.cyan/blue}] {msg:.bold.dim}")
+		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
+		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
 	bar.set_prefix(&format!("[{}/{}] Provisioning filesystem...", steps, steps));
 	for i in board.files {

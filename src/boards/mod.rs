@@ -63,8 +63,8 @@ pub fn print(arch: String) {
 		Err(AppError::NotFound) => { println!("  (none)"); return },
 		Err(e) => { println!("  Error: {}", e); return },
 	};
-	print!("  {:10} {:10} {:20}\n", "Board", "SOC", "Name");
+	print!("  {:20} {:10} {:20}\n", "Board", "SOC", "Name");
 	for board in arch_boards {
-		print!("  {:10} {:10} {:20}\n", board.id, board.soc, board.name);
+		print!("  {:20} {:10} {:20}\n", board.id, board.soc, board.name);
 	}
 }
