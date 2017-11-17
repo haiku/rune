@@ -56,6 +56,18 @@ pub fn get_board(board_id: String) -> Result<Board, AppError> {
 	return Err(AppError::NotFound);
 }
 
+pub fn get_boot_script(loader: String, ramdisk: String, fdt: String) -> String {
+	// Recent u-boot's have sane load addresses built-in which reduces what
+	// we need to know about the potental boards.
+	vec![
+		format!("fatload mmc 0 ${{kernel_addr_r}} {}", loader),
+		format!("fatload mmc 0 ${{ramdisk_addr_r}} {}", ramdisk),
+		format!("fatload mmc 0 ${{fdt_addr_r}} {}", fdt),
+		format!("fdt addr ${{fdt_addr_r}}"),
+		format!("bootm ${{kernel_addr_r}} ${{ramdisk_addr_r}} ${{fdt_addr_r}}")
+	].join("\n")
+}
+
 pub fn print(arch: String) {
 	print!("{}\n===\n", arch);
 	let arch_boards = match get_arch(arch) {
