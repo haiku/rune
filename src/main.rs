@@ -30,7 +30,6 @@ use std::io::Read;
 use std::io;
 use std::fs::File;
 use getopts::Options;
-use apperror::AppError;
 use fatr::fat;
 use tempdir::TempDir;
 use url::Url;
@@ -40,7 +39,6 @@ use itertools::Itertools;
 
 mod boards;
 mod image_tools;
-mod apperror;
 
 fn print_usage(program: &str, opts: Options) {
 	let brief = format!("rune - write bootable ARM Haiku mmc images\nUsage: {} [options] <output>", program);
@@ -53,6 +51,7 @@ fn flag_error(program: &str, opts: Options, error: &str) {
 }
 
 fn place_files(board: boards::Board, fatimage: &mut fat::Image, steps: u32) -> Result<u32, Box<Error>> {
+
 	let temp_dir = TempDir::new("rune")?;
 	let count = board.files.len() as u32;
 	if count == 0 {
@@ -172,10 +171,6 @@ fn main() {
 	};
 	let board = match boards::get_board(board_id) {
 		Ok(x) => x,
-		Err(AppError::NotFound) => {
-			flag_error(&program, opts, "Unknown target board!");
-			process::exit(1);
-		},
 		Err(e) => {
 			println!("Error: {}", e.description());
 			process::exit(1);

@@ -11,10 +11,8 @@
 extern crate serde_json;
 extern crate reqwest;
 
-
-use apperror::AppError;
 use std::io::Read;
-
+use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Board {
@@ -25,7 +23,7 @@ pub struct Board {
 	pub files: Vec<String>,
 }
 
-pub fn get_boards(uri: String) -> Result<Vec<Board>, AppError> {
+pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<Error>> {
 	let mut resp = reqwest::get(uri.as_str())?;
 	let mut content = String::new();
 	resp.read_to_string(&mut content)?;
@@ -33,7 +31,7 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, AppError> {
 	return Ok(results);
 }
 
-pub fn get_arch(arch: String) -> Result<Vec<Board>, AppError> {
+pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<Error>> {
 	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	let mut results: Vec<Board> = Vec::new();
@@ -45,7 +43,7 @@ pub fn get_arch(arch: String) -> Result<Vec<Board>, AppError> {
 	return Ok(results)
 }
 
-pub fn get_board(board_id: String) -> Result<Board, AppError> {
+pub fn get_board(board_id: String) -> Result<Board, Box<Error>> {
 	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	for i in boards {
@@ -53,7 +51,7 @@ pub fn get_board(board_id: String) -> Result<Board, AppError> {
 			return Ok(i);
 		}
 	}
-	return Err(AppError::NotFound);
+	return Err(From::from("Unknown target board!"));
 }
 
 pub fn get_boot_script(loader: String, ramdisk: String, fdt: String) -> String {
@@ -72,7 +70,6 @@ pub fn print(arch: String) {
 	print!("{}\n===\n", arch);
 	let arch_boards = match get_arch(arch) {
 		Ok(m) => { m },
-		Err(AppError::NotFound) => { println!("  (none)"); return },
 		Err(e) => { println!("  Error: {}", e); return },
 	};
 	print!("  {:20} {:10} {:20}\n", "Board", "SOC", "Name");
