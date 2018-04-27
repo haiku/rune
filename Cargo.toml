@@ -14,5 +14,6 @@ reqwest = "*"
 tempdir = "0.3"
 url = "*"
 fatr = { git = "https://github.com/zanesterling/fatr.git" }
+fatfs = "*"
 itertools = "0.5.9"
 indicatif = "*"

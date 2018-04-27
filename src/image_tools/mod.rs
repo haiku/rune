@@ -11,8 +11,10 @@
 use std::error::Error;
 use std::path::PathBuf;
 use std::io;
+use std::io::{Seek, SeekFrom};
 use std::fs;
-use fatr::fat;
+use std::fs::File;
+use fatfs::{FileSystem, FsOptions, BufStream};
 use mbr::partition;
 
 /// Write file at source to dest
@@ -29,13 +31,14 @@ pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<E
 			// Ignore non-fat partitions
 			continue;
 		}
-		let image = fat::Image::from_file_offset(disk.clone(),
-			(partitions[0].p_lba as usize * sector_size), partitions[0].p_size as usize * sector_size)?;
-		let volume_id = match image.volume_label() {
-			Ok(v) => v,
+		let disk_handle = File::open(disk.clone())?;
+		let mut buf_rdr = BufStream::new(disk_handle);
+		buf_rdr.seek(SeekFrom::Start((partitions[0].p_lba as u64 * sector_size)))?;
+		let fs = match FileSystem::new(&mut buf_rdr, FsOptions::new()) {
+			Ok(x) => x,
 			Err(_) => continue,
 		};
-		if !volume_id.to_uppercase().contains("HAIKU") {
+		if !fs.volume_label().to_uppercase().contains("HAIKU") {
 			continue;
 		}
 		// TODO: More checks?

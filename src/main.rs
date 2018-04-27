@@ -10,6 +10,7 @@
 
 extern crate getopts;
 extern crate mbr;
+extern crate fatfs;
 extern crate fatr;
 extern crate reqwest;
 extern crate tempdir;
