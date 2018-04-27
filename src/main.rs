@@ -11,9 +11,7 @@
 extern crate getopts;
 extern crate mbr;
 extern crate fatfs;
-extern crate fatr;
 extern crate reqwest;
-extern crate tempdir;
 extern crate url;
 extern crate itertools;
 extern crate indicatif;
@@ -27,16 +25,13 @@ use std::error::Error;
 use std::process;
 use std::env;
 use std::path::PathBuf;
-use std::io::Read;
+use std::io::{Seek,SeekFrom};
 use std::io;
-use std::fs::File;
+use std::fs::OpenOptions;
+use fatfs::{BufStream, FileSystem, FsOptions};
 use getopts::Options;
-use fatr::fat;
-use tempdir::TempDir;
 use url::Url;
 use indicatif::{ProgressBar,ProgressStyle};
-
-use itertools::Itertools;
 
 mod boards;
 mod image_tools;
@@ -51,9 +46,7 @@ fn flag_error(program: &str, opts: Options, error: &str) {
 	print_usage(&program, opts);
 }
 
-fn place_files(board: boards::Board, fatimage: &mut fat::Image, steps: u32) -> Result<u32, Box<Error>> {
-
-	let temp_dir = TempDir::new("rune")?;
+fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u32) -> Result<u32, Box<Error>> {
 	let count = board.files.len() as u32;
 	if count == 0 {
 		return Err(From::from("No files found for board!"));
@@ -74,57 +67,18 @@ fn place_files(board: boards::Board, fatimage: &mut fat::Image, steps: u32) -> R
 		bar.set_message(&format!("Downloading: {}", filename));
 		bar.inc(1);
 
-		// Don't overwrite a preexisting file.
-		if let Ok(_) = fatimage.get_file_entry(filename.clone().to_string()) {
-			//println!("  Skipping {} since it already exists in image.", i);
-			continue;
-		}
-
 		//println!("  GET {} {:?}", url, filename);
-		let file_path = temp_dir.path().join(filename);
 
-		{
-			// Download file per manifest to temporary path
-			let mut resp = reqwest::get(url.clone())?;
-			if !resp.status().is_success() {
-				return Err(From::from(format!("Error obtaining {}", i)));
-			}
-			let mut new_file = File::create(file_path.clone())?;
-			io::copy(&mut resp, &mut new_file)?;
-			new_file.sync_all()?;
+		// Download file per manifest
+		let mut resp = reqwest::get(url.clone())?;
+		if !resp.status().is_success() {
+			return Err(From::from(format!("Error obtaining {}", i)));
 		}
-
 		bar.set_message(&format!("Writing: {}", filename));
 		bar.inc(1);
 
-		let file = File::open(file_path.clone())?;
-		let metadata = file.metadata()?;
-
-		// Create a root dir entry.
-		let (entry, index) =
-			fatimage.create_file_entry(filename.to_string(), metadata.len() as u32)?;
-
-		// Get free FAT entries, fill sectors with file data.
-		for chunk in &file.bytes().chunks(fatimage.sector_size()) {
-			let chunk = chunk
-				.map(|b_res| b_res.unwrap_or(0))
-				.collect::<Vec<_>>();
-
-			// Get free sector.
-			let entry_index: usize;
-			match fatimage.get_free_fat_entry() {
-				Some(i) => entry_index = i,
-				None => {
-					// TODO: Remove entries written so far.
-					panic!("image ran out of space while writing file")
-				},
-			}
-
-			// Write chunk.
-			fatimage.write_data_sector(entry_index, &chunk)?;
-		}
-
-		fatimage.save_file_entry(entry, index)?;
+		let mut target_file = target_fs.root_dir().create_file(filename)?;
+		io::copy(&mut resp, &mut target_file)?;
 	}
 	bar.finish();
 	return Ok(count);
@@ -211,29 +165,37 @@ fn main() {
 	};
 
 	let sector_size = 512;
-	let mut image = match fat::Image::from_file_offset(output_file.clone(),
-		boot_partition.p_lba as usize * sector_size,
-		boot_partition.p_size as usize * sector_size) {
+	let disk_handle = match OpenOptions::new().read(true).write(true).open(output_file.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
 			process::exit(1);
+		},
+	};
+
+	let mut buf_rdr = BufStream::new(disk_handle);
+	match buf_rdr.seek(SeekFrom::Start((boot_partition.p_lba as u64 * sector_size))) {
+		Ok(_) => {},
+		Err(e) => {
+			print!("Error Reading Partitions: {}\n", e);
+			process::exit(1);
+		},
+	}
+
+	let mut fs = match FileSystem::new(&mut buf_rdr, FsOptions::new()) {
+		Ok(x) => x,
+		Err(e) => {
+			print!("Filesystem Error: {}\n", e);
+			process::exit(1);
 		}
 	};
 
-	let count = match place_files(board.clone(), &mut image, steps) {
+	let count = match place_files(board.clone(), &mut fs, steps) {
 		Ok(i) => i,
 		Err(e) => {
-			print!("Error: {}\n", e);
+			print!("Error Placing Files: {}\n", e);
 			process::exit(1);
 		}
 	};
 	print!("Obtained {} boot-related files.\n", count);
-	match image.save(output_file.clone()) {
-		Ok(_) => {},
-		Err(e) => {
-			print!("Error: {}\n", e);
-			process::exit(1);
-		}
-	};
 }
