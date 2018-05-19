@@ -25,7 +25,6 @@ use std::error::Error;
 use std::process;
 use std::env;
 use std::path::PathBuf;
-use std::io::{Seek,SeekFrom};
 use std::io;
 use std::fs;
 use std::fs::OpenOptions;

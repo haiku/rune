@@ -1,6 +1,5 @@
-use std::{cmp, fs, io};
+use std::{cmp, io};
 use std::io::{prelude::*, SeekFrom, ErrorKind};
-use fatfs::{FileSystem, FsOptions, BufStream};
 
 pub trait ReadWriteSeek: Read + Write + Seek {}
 impl<T> ReadWriteSeek for T where T: Read + Write + Seek {}

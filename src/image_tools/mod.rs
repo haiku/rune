@@ -33,7 +33,7 @@ pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<E
 		}
 		let disk_handle = File::open(disk.clone())?;
 		let mut buf_rdr = BufStream::new(disk_handle);
-		buf_rdr.seek(SeekFrom::Start((partitions[0].p_lba as u64 * sector_size)))?;
+		buf_rdr.seek(SeekFrom::Start(partitions[0].p_lba as u64 * sector_size))?;
 		let fs = match FileSystem::new(&mut buf_rdr, FsOptions::new()) {
 			Ok(x) => x,
 			Err(_) => continue,
