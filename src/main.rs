@@ -27,13 +27,16 @@ use std::env;
 use std::path::PathBuf;
 use std::io::{Seek,SeekFrom};
 use std::io;
+use std::fs;
 use std::fs::OpenOptions;
 use fatfs::{BufStream, FileSystem, FsOptions};
 use getopts::Options;
 use url::Url;
 use indicatif::{ProgressBar,ProgressStyle};
+use partition::Partition;
 
 mod boards;
+mod partition;
 mod image_tools;
 
 fn print_usage(program: &str, opts: Options) {
@@ -165,7 +168,7 @@ fn main() {
 	};
 
 	let sector_size = 512;
-	let disk_handle = match OpenOptions::new().read(true).write(true).open(output_file.clone()) {
+	let handle = match OpenOptions::new().read(true).write(true).open(output_file.clone()) {
 		Ok(x) => x,
 		Err(e) => {
 			print!("Error: {}\n", e);
@@ -173,15 +176,15 @@ fn main() {
 		},
 	};
 
-	let mut buf_rdr = BufStream::new(disk_handle);
-	match buf_rdr.seek(SeekFrom::Start((boot_partition.p_lba as u64 * sector_size))) {
-		Ok(_) => {},
+	let partition = match Partition::<fs::File>::new(handle, boot_partition.p_lba as u64 * sector_size, boot_partition.p_size as u64 * sector_size) {
+		Ok(p) => p,
 		Err(e) => {
 			print!("Error Reading Partitions: {}\n", e);
 			process::exit(1);
 		},
-	}
+	};
 
+	let mut buf_rdr = BufStream::new(partition);
 	let mut fs = match FileSystem::new(&mut buf_rdr, FsOptions::new()) {
 		Ok(x) => x,
 		Err(e) => {
