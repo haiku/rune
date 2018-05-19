@@ -60,9 +60,9 @@ pub fn get_boot_script(loader: String, ramdisk: String, fdt: String) -> String {
 	vec![
 		format!("fatload mmc 0 ${{kernel_addr_r}} {}", loader),
 		format!("fatload mmc 0 ${{ramdisk_addr_r}} {}", ramdisk),
-		format!("fatload mmc 0 ${{fdt_addr_r}} {}", fdt),
+		format!("fatload mmc 0 ${{fdt_addr_r}} /fdt/{}.dtb", fdt),
 		format!("fdt addr ${{fdt_addr_r}}"),
-		format!("bootm ${{kernel_addr_r}} ${{ramdisk_addr_r}} ${{fdt_addr_r}}")
+		format!("bootm ${{kernel_addr_r}} ${{ramdisk_addr_r}} ${{fdt_addr_r}}\n")
 	].join("\n")
 }
 

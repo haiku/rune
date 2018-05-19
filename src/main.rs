@@ -26,6 +26,7 @@ use std::process;
 use std::env;
 use std::path::PathBuf;
 use std::io;
+use std::io::Write;
 use std::fs;
 use std::fs::OpenOptions;
 use fatfs::{BufStream, FileSystem, FsOptions};
@@ -200,4 +201,23 @@ fn main() {
 		}
 	};
 	print!("Obtained {} boot-related files.\n", count);
+
+	let boot_script
+		= boards::get_boot_script("haiku_loader.ub".to_string(), "haiku-floppyboot.tgz.ub".to_string(), board.id);
+
+	let mut boot_file = match fs.root_dir().create_file("boot.scr") {
+		Ok(o) => o,
+		Err(e) => {
+			print!("Error Placing boot.scr: {}\n", e);
+			process::exit(1);
+		}
+	};
+	match boot_file.write_all(boot_script.as_bytes()) {
+		Ok(_) => {},
+		Err(e) => {
+			print!("Error Placing boot.scr: {}\n", e);
+			process::exit(1);
+		}
+	};
+	println!("{} is ready to boot on the {}!", output_file.display(), board.name);
 }
