@@ -54,15 +54,10 @@ pub fn get_board(board_id: String) -> Result<Board, Box<Error>> {
 	return Err(From::from("Unknown target board!"));
 }
 
-pub fn get_boot_script(loader: String, ramdisk: String, fdt: String) -> String {
-	// Recent u-boot's have sane load addresses built-in which reduces what
-	// we need to know about the potental boards.
+pub fn get_boot_env(fdt: String) -> String {
+	// Fill in any relevant board information
 	vec![
-		format!("fatload mmc 0 ${{kernel_addr_r}} {}", loader),
-		format!("fatload mmc 0 ${{ramdisk_addr_r}} {}", ramdisk),
-		format!("fatload mmc 0 ${{fdt_addr_r}} /fdt/{}.dtb", fdt),
-		format!("fdt addr ${{fdt_addr_r}}"),
-		format!("bootm ${{kernel_addr_r}} ${{ramdisk_addr_r}} ${{fdt_addr_r}}\n")
+		format!("dtb=/fdt/{}.dtb", fdt),
 	].join("\n")
 }
 

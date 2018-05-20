@@ -202,22 +202,22 @@ fn main() {
 	};
 	print!("Obtained {} boot-related files.\n", count);
 
-	let boot_script
-		= boards::get_boot_script("haiku_loader.ub".to_string(), "haiku-floppyboot.tgz.ub".to_string(), board.id);
+	let boot_env
+		= boards::get_boot_env(board.id);
 
-	let mut boot_file = match fs.root_dir().create_file("boot.scr") {
+	let mut env_file = match fs.root_dir().create_file("uEnv.txt") {
 		Ok(o) => o,
 		Err(e) => {
-			print!("Error Placing boot.scr: {}\n", e);
+			print!("Error creating uEnv.txt: {}\n", e);
 			process::exit(1);
 		}
 	};
-	match boot_file.write_all(boot_script.as_bytes()) {
+	match env_file.write_all(boot_env.as_bytes()) {
 		Ok(_) => {},
 		Err(e) => {
-			print!("Error Placing boot.scr: {}\n", e);
+			print!("Error placing uEnv.txt: {}\n", e);
 			process::exit(1);
 		}
 	};
-	println!("{} is ready to boot on the {}!", output_file.display(), board.name);
+	println!("Success! {} is ready to boot on the {}! Enjoy Haiku!", output_file.display(), board.name);
 }
