@@ -2,3 +2,10 @@ language: rust
 os:
   - linux
   - osx
+deploy:
+  provider: releases
+  api_key:
+    secure: OqFAsM2sRIbGhmqTODlwhfIlxjrnJos+NpTigW8arD8rgBbAi1Z+4ESXuP9k1cW+T4odHhhhfUXzLOgivQoGvarJjNsa4dsphPisQROzMkKFshQl2U66sf0VvUPopvp+785y/cs7PozpGufmlS+Q1Eg2NKQfDtRLoYp0UDwxVJhxarccTjuZJyZwDDnz4w5X5umeodeA+3+OtCo9UNMFpWvtFRjPukz9N5i1dYaayMNcOvD/hEXOOF35ucTtI8KOjTvrG/nMRLX3ptsO+vYEoijbOq1lmfY8r9W/F65aL6KG6/7lHdP9Prm+JbnDE6t/LbJoTL9Z1CNAioK0W8cKWwg7YFiGnxXaV/P6LLvNeKa4291H7IHozRWB8KqP4AfLcasTufUS4qNk4Aux1fEaxsR6ltpjrg6RJxzi4cYsemW5C1v+T6CHHmyEYyxuNt1V44qqv4Xkmv+7EMnovHIBlc6uBRhA3x8WT5s+H4uU+o2lQyjUwVdVwPZEYkFWigm8Un3XHgoG0zrtz0c44ETVbWD6hyjQjqlJ4I5SCotSmG2JFTn7f3xpPxOXlyMIl9v6IhgTl23S3qW0/rwebbNortY7w7UhHwa1yUPCCvGAUnOigWLOMCuesYqUwEvXkEgItGucvwbmf4MzNV6R2IKJgDgw3lqdNWb7Rt6VV8gYXy8=
+  file: target/release/rune
+  on:
+    tags: true
