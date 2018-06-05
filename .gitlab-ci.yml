@@ -2,7 +2,7 @@ image: "liuchong/rustup:nightly"
 
 before_script:
 - apt-get update -yqq
-- apt-get install -yqq --no-install-recommends build-essential gcc-mingw-w64-x86-64 gcc-arm-none-eabi gcc-multilib
+- apt-get install -yqq --no-install-recommends build-essential gcc-mingw-w64-x86-64 gcc-arm-none-eabi gcc-multilib mingw-w64
 - rustup toolchain remove nightly
 - rustup toolchain install nightly
 - rustup update
