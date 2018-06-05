@@ -2,14 +2,13 @@ image: "liuchong/rustup:nightly"
 
 before_script:
 - apt-get update -yqq
-- apt-get install -yqq --no-install-recommends build-essential gcc-mingw-w64-x86-64 gcc-arm-none-eabi gcc-multilib musl musl-dev musl-tools
+- apt-get install -yqq --no-install-recommends build-essential gcc-mingw-w64-x86-64 gcc-arm-none-eabi gcc-multilib
 - rustup toolchain remove nightly
 - rustup toolchain install nightly
 - rustup update
 - rustup target add arm-unknown-linux-gnueabihf
-- rustup target add arm-unknown-linux-musleabihf
 - rustup target add i686-unknown-linux-gnu
-- rustup target add x86_64-unknown-linux-musl
+- rustup target add x86_64-pc-windows-gnu
 
 test:cargo:
   script:
@@ -18,3 +17,33 @@ test:cargo:
   - rustc --version && cargo --version
   - cargo test --jobs 1
   - cargo bench
+
+build:linux-x86_64:
+  script:
+  - cargo build --release
+  artifacts:
+    paths:
+    - target/
+
+build:linux-i686:
+  script:
+  - cargo build --release
+  artifacts:
+    paths:
+    - target/
+
+build:linux-arm:
+  script:
+  - cargo build --release --target=arm-unknown-linux-gnueabihf
+  artifacts:
+    paths:
+    - target/
+  allow_failure: true
+
+build:windows-x86_64:
+  script:
+  - cargo build --release --target=x86_64-pc-windows-gnu
+  artifacts:
+    paths:
+    - target/
+  allow_failure: true
