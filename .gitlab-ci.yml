@@ -6,7 +6,7 @@ before_script:
 - rustup toolchain remove nightly
 - rustup toolchain install nightly
 - rustup update
-- rustup target add arm-unknown-linux-gnueabihf
+- rustup target add arm-unknown-linux-gnueabi
 - rustup target add i686-unknown-linux-gnu
 - rustup target add x86_64-pc-windows-gnu
 
@@ -34,7 +34,7 @@ build:linux-i686:
 
 build:linux-arm:
   script:
-  - cargo build --release --target=arm-unknown-linux-gnueabihf
+  - cargo build --release --target=arm-unknown-linux-gnueabi
   artifacts:
     paths:
     - target/
