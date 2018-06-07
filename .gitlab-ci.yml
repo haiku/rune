@@ -1,14 +1,16 @@
-image: "liuchong/rustup:nightly"
+image: "kallisti5/ci-rust:latest"
 
 before_script:
-- apt-get update -yqq
-- apt-get install -yqq --no-install-recommends build-essential gcc-mingw-w64-x86-64 gcc-arm-none-eabi gcc-multilib mingw-w64 libssl-dev
-- rustup toolchain remove nightly
 - rustup toolchain install nightly
 - rustup update
-- rustup target add arm-unknown-linux-gnueabi
 - rustup target add i686-unknown-linux-gnu
 - rustup target add x86_64-pc-windows-gnu
+- rustup target add armv7-unknown-linux-gnueabihf
+- echo '[target.x86_64-pc-windows-gnu]' >> ~/.cargo/config
+- echo 'linker = "/usr/bin/x86_64-w64-mingw32-gcc"' >> ~/.cargo/config
+- echo 'ar = "/usr/bin/x86_64-w64-mingw32-ar"' >> ~/.cargo/config
+- echo '[target.armv7-unknown-linux-gnueabihf]' >> ~/.cargo/config
+- echo 'linker = "arm-linux-gnueabihf-gcc"' >> ~/.cargo/config
 
 test:cargo:
   script:
@@ -32,13 +34,13 @@ build:linux-i686:
     paths:
     - target/
 
-build:linux-arm:
-  script:
-  - cargo build --release --target=arm-unknown-linux-gnueabi
-  artifacts:
-    paths:
-    - target/
-  allow_failure: true
+#build:linux-armv7:
+#  script:
+#  - cargo build --release --target=armv7-unknown-linux-gnueabihf
+#  artifacts:
+#    paths:
+#    - target/
+#  allow_failure: true
 
 build:windows-x86_64:
   script:
