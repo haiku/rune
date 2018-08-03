@@ -38,6 +38,12 @@ Example Usage
   * **Write the prepared disk image to a file:** ```rune -b rpi2 -i haiku-arm.mmc /home/alex/haiku-arm-rpi2.mmc```
   * **Make an SD card bootable which has had Haiku dd'ed to it:** ```rune -b rpi2 /dev/sdc```
 
+Compiling
+---------
+
+  * Install rust 1.26.0 or later. https://rustup.rs/ can be used if your distro doesn't provide.
+  * cargo build --release
+
 Credit
 ------
 
