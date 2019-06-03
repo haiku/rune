@@ -8,6 +8,8 @@ Rune is a tool to post-process Haiku raw ARM images for various physical target 
 > Rune is generally only required to run Haiku on physical ARM devices. If you are emulating
 > within qemu or another emulator, rune is not required.
 
+[![asciicast](https://asciinema.org/a/249798.png)](https://asciinema.org/a/249798)
+
 Features
 ---------
 
