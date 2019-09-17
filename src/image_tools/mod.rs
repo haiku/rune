@@ -23,7 +23,7 @@ pub fn write(source: PathBuf, dest: PathBuf) -> io::Result<u64> {
 }
 
 /// Validate disk as containing Haiku and locate "boot" partition.
-pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<Error>> {
+pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<dyn Error>> {
 	let partitions = partition::read_partitions(disk.clone())?;
 	for (_, partition) in partitions.iter().enumerate() {
 		let sector_size = 512;

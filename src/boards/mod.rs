@@ -23,7 +23,7 @@ pub struct Board {
 	pub files: Vec<String>,
 }
 
-pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<Error>> {
+pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
 	let mut resp = reqwest::get(uri.as_str())?;
 	let mut content = String::new();
 	resp.read_to_string(&mut content)?;
@@ -31,7 +31,7 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<Error>> {
 	return Ok(results);
 }
 
-pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<Error>> {
+pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
 	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	let mut results: Vec<Board> = Vec::new();
@@ -43,7 +43,7 @@ pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<Error>> {
 	return Ok(results)
 }
 
-pub fn get_board(board_id: String) -> Result<Board, Box<Error>> {
+pub fn get_board(board_id: String) -> Result<Board, Box<dyn Error>> {
 	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	for i in boards {

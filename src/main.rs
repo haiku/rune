@@ -49,7 +49,8 @@ fn flag_error(program: &str, opts: Options, error: &str) {
 	print_usage(&program, opts);
 }
 
-fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u32) -> Result<u32, Box<Error>> {
+fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u32)
+    -> Result<u32, Box<dyn Error>> {
 	let count = board.files.len() as u32;
 	if count == 0 {
 		return Err(From::from("No files found for board!"));
