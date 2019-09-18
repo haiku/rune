@@ -1,7 +1,7 @@
 /*
  * Rune - OS Image preperation tool
  *
- * Copyright, 2017 Haiku, Inc. All rights Reserved.
+ * Copyright, 2017-2019 Haiku, Inc. All rights Reserved.
  * Released under the terms of the MIT license.
  *
  * Authors:
@@ -27,7 +27,7 @@ use std::process;
 use std::env;
 use std::path::PathBuf;
 use std::io;
-use std::io::Write;
+use std::io::{Write,SeekFrom,Seek};
 use std::fs;
 use std::fs::OpenOptions;
 use fatfs::{BufStream, FileSystem, FsOptions};
@@ -51,6 +51,74 @@ fn flag_error(program: &str, opts: Options, error: &str) {
 	print_usage(&program, opts);
 }
 
+/// Write files which have an offset to the target block device / image
+fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
+	-> Result<u32, Box<dyn Error>> {
+	let count = board.files.len() as u32;
+	if count == 0 {
+		return Err(From::from("No files found for board!"));
+	}
+	let mut wrote = count;
+	let bar = ProgressBar::new((count * 2) as u64);
+	bar.set_style(ProgressStyle::default_bar()
+		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
+		.tick_chars("◐◓◑◒")
+		.progress_chars("#>-"));
+	bar.set_prefix(&format!("[{}/{}] Provisioning block device...", steps - 1, steps));
+	let raw_re = Regex::new(r"^(\d+),(.+)$").unwrap();
+
+	let mut output_fh = OpenOptions::new().read(true).write(true).open(disk)?;
+	for i in board.files {
+		if !raw_re.is_match(i.as_str()) {
+			// This is not raw file which goes directly on the image. Skip it.
+			wrote = wrote - 1;
+			bar.inc(2);
+			continue;
+		}
+		let matches = match raw_re.captures(i.as_str()) {
+			Some(x) => x,
+			None => {
+				return Err(From::from(format!("Error: Invalid raw file: '{:?}'", i)));
+			}
+		};
+		let url = Url::parse(&matches[2])?;
+		let offset = &matches[1].parse::<u64>().unwrap();
+
+		let filename = match url.path_segments() {
+			Some(x) => x.last().unwrap(),
+			None => return Err(From::from(format!("Invalid URL {}", i))),
+		};
+
+		bar.set_message(&format!("Downloading: {}", filename));
+		bar.inc(1);
+
+		//println!("  GET {} {:?} to write at {}", url, filename, offset);
+
+		// Download file per manifest
+		let mut resp = reqwest::get(url.clone())?;
+		if !resp.status().is_success() {
+			return Err(From::from(format!("Error obtaining {}", url)));
+		}
+		bar.set_message(&format!("Writing: {}", filename));
+		bar.inc(1);
+
+		// Jump to specified offset in file
+		output_fh.seek(SeekFrom::Start(*offset))?;
+		// Write the raw file to the block device.
+		io::copy(&mut resp, &mut output_fh)?;
+	}
+    output_fh.sync_data()?;
+
+	if wrote == 0 {
+		bar.set_message(&format!("None required."));
+	}
+	bar.set_message(&format!("Success ({} offsets).", wrote));
+
+	bar.finish();
+	return Ok(wrote);
+}
+
+/// Place the files onto the fat32 boot partition on the block device or image.
 fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u32)
 	-> Result<u32, Box<dyn Error>> {
 	let count = board.files.len() as u32;
@@ -63,7 +131,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
 		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
-	bar.set_prefix(&format!("[{}/{}] Provisioning filesystem...", steps, steps));
+	bar.set_prefix(&format!("[{}/{}] Provisioning filesystem...  ", steps, steps));
 	let raw_re = Regex::new(r"^(\d+),(.+)$").unwrap();
 	for i in board.files {
 		if raw_re.is_match(i.as_str()) {
@@ -73,7 +141,6 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 			continue;
 		}
 		let url = Url::parse(i.as_str())?;
-
 		let filename = match url.path_segments() {
 			Some(x) => x.last().unwrap(),
 			None => return Err(From::from(format!("Invalid URL {}", i))),
@@ -95,6 +162,10 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		let mut target_file = target_fs.root_dir().create_file(filename)?;
 		io::copy(&mut resp, &mut target_file)?;
 	}
+	if wrote == 0 {
+		bar.set_message(&format!("Not required."));
+	}
+	bar.set_message(&format!("Success ({} files).", wrote));
 	bar.finish();
 	return Ok(wrote);
 }
@@ -147,9 +218,9 @@ fn main() {
 		},
 	};
 
-	let mut steps = 2;
+	let mut steps = 3;
 	if matches.opt_present("i") {
-		steps = 3;
+		steps = 4;
 	}
 
 	println!("[1/{}] Calculating dependencies for {} ({}) media...", steps, board.name, board.soc);
@@ -179,6 +250,14 @@ fn main() {
 		},
 	};
 
+	match write_files(board.clone(), output_file.clone(), steps) {
+		Ok(_) => {},
+		Err(e) => {
+			print!("Error Writing Files: {}\n", e);
+			process::exit(1);
+		}
+	}
+
 	let sector_size = 512;
 	let handle = match OpenOptions::new().read(true).write(true).open(output_file.clone()) {
 		Ok(x) => x,
@@ -205,14 +284,13 @@ fn main() {
 		}
 	};
 
-	let count = match place_files(board.clone(), &mut fs, steps) {
-		Ok(i) => i,
+	match place_files(board.clone(), &mut fs, steps) {
+		Ok(_) => {},
 		Err(e) => {
 			print!("Error Placing Files: {}\n", e);
 			process::exit(1);
 		}
-	};
-	print!("Added {} boot-related files to the filesystem.\n", count);
+	}
 
 	let boot_env
 		= boards::get_boot_env(board.id);
