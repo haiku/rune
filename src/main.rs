@@ -57,6 +57,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 	if count == 0 {
 		return Err(From::from("No files found for board!"));
 	}
+	let mut wrote = count;
 	let bar = ProgressBar::new((count * 2) as u64);
 	bar.set_style(ProgressStyle::default_bar()
 		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
@@ -67,6 +68,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 	for i in board.files {
 		if raw_re.is_match(i.as_str()) {
 			// This is a raw file which goes directly on the image. Skip it.
+			wrote = wrote - 1;
 			bar.inc(2);
 			continue;
 		}
@@ -94,7 +96,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		io::copy(&mut resp, &mut target_file)?;
 	}
 	bar.finish();
-	return Ok(count);
+	return Ok(wrote);
 }
 
 fn main() {
@@ -210,7 +212,7 @@ fn main() {
 			process::exit(1);
 		}
 	};
-	print!("Obtained {} boot-related files.\n", count);
+	print!("Added {} boot-related files to the filesystem.\n", count);
 
 	let boot_env
 		= boards::get_boot_env(board.id);
