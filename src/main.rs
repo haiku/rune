@@ -67,7 +67,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 	for i in board.files {
 		if raw_re.is_match(i.as_str()) {
 			// This is a raw file which goes directly on the image. Skip it.
-			bar.inc(1);
+			bar.inc(2);
 			continue;
 		}
 		let url = Url::parse(i.as_str())?;
