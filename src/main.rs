@@ -11,6 +11,7 @@
 extern crate getopts;
 extern crate mbr;
 extern crate fatfs;
+extern crate regex;
 extern crate reqwest;
 extern crate url;
 extern crate itertools;
@@ -34,6 +35,7 @@ use getopts::Options;
 use url::Url;
 use indicatif::{ProgressBar,ProgressStyle};
 use partition::Partition;
+use regex::Regex;
 
 mod boards;
 mod partition;
@@ -50,7 +52,7 @@ fn flag_error(program: &str, opts: Options, error: &str) {
 }
 
 fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u32)
-    -> Result<u32, Box<dyn Error>> {
+	-> Result<u32, Box<dyn Error>> {
 	let count = board.files.len() as u32;
 	if count == 0 {
 		return Err(From::from("No files found for board!"));
@@ -61,8 +63,15 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
 	bar.set_prefix(&format!("[{}/{}] Provisioning filesystem...", steps, steps));
+	let raw_re = Regex::new(r"^(\d+),(.+)$").unwrap();
 	for i in board.files {
+		if raw_re.is_match(i.as_str()) {
+			// This is a raw file which goes directly on the image. Skip it.
+			bar.inc(1);
+			continue;
+		}
 		let url = Url::parse(i.as_str())?;
+
 		let filename = match url.path_segments() {
 			Some(x) => x.last().unwrap(),
 			None => return Err(From::from(format!("Invalid URL {}", i))),
