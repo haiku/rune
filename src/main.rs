@@ -95,7 +95,7 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 		//println!("  GET {} {:?} to write at {}", url, filename, offset);
 
 		// Download file per manifest
-		let mut resp = reqwest::get(url.clone())?;
+		let mut resp = reqwest::get(url.as_str())?;
 		if !resp.status().is_success() {
 			return Err(From::from(format!("Error obtaining {}", url)));
 		}
@@ -152,7 +152,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		//println!("  GET {} {:?}", url, filename);
 
 		// Download file per manifest
-		let mut resp = reqwest::get(url.clone())?;
+		let mut resp = reqwest::get(url.as_str())?;
 		if !resp.status().is_success() {
 			return Err(From::from(format!("Error obtaining {}", i)));
 		}
