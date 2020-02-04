@@ -1,11 +1,11 @@
 Rune
 ====
 
-Rune is a tool to post-process Haiku raw ARM images for various physical target devices.
+Rune is a tool to post-process Haiku raw ARM/ARM64 images for various physical target devices.
 
-[![Build Status](https://travis-ci.org/kallisti5/rune-image.svg?branch=master)](https://travis-ci.org/kallisti5/rune-image) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build Status](https://travis-ci.org/haiku/rune.svg?branch=master)](https://travis-ci.org/haiku/rune-image) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> Rune is generally only required to run Haiku on physical ARM devices. If you are emulating
+> Rune is generally only required to run Haiku on physical ARM/ARM64 devices. If you are emulating
 > within qemu or another emulator, rune is not required.
 
 [![asciicast](https://asciinema.org/a/249798.png)](https://asciinema.org/a/249798)
