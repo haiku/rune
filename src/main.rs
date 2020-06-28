@@ -292,6 +292,11 @@ fn main() {
 		}
 	}
 
+    /*
+    // XXX: We might need this in the future, however we use the built-in
+    // u-boot FDT in all test cases at the moment. This also corrupts the
+    // current uEnv.txt. It needs to be smarter, and maybe weigh in the
+    // firmware.json
 	let boot_env
 		= boards::get_boot_env(board.id);
 
@@ -309,5 +314,6 @@ fn main() {
 			process::exit(1);
 		}
 	};
+    */
 	println!("Success! {} is ready to boot on the {}! Enjoy Haiku!", output_file.display(), board.name);
 }
