@@ -1,7 +1,7 @@
 /*
  * Rune - OS Image preperation tool
  *
- * Copyright, 2017 Haiku, Inc. All rights Reserved.
+ * Copyright, 2017-2020 Haiku, Inc. All rights Reserved.
  * Released under the terms of the MIT license.
  *
  * Authors:
@@ -32,7 +32,7 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
 }
 
 pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
-	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
+	let uri = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	let mut results: Vec<Board> = Vec::new();
 	for i in boards {
@@ -44,7 +44,7 @@ pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
 }
 
 pub fn get_board(board_id: String) -> Result<Board, Box<dyn Error>> {
-	let uri = "https://github.com/haiku/firmware/raw/master/manifest.json".to_string();
+	let uri = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json".to_string();
 	let boards = get_boards(uri)?;
 	for i in boards {
 		if i.id == board_id {
