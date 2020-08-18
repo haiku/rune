@@ -13,7 +13,7 @@ Rune is a tool to post-process Haiku raw ARM/ARM64 images for various physical t
 Features
 ---------
 
-  * Coordinates with a [remote manifest](https://github.com/haiku/firmware/blob/master/manifest.json) at Github of known target boards.
+  * Coordinates with a [remote manifest](https://github.com/haiku/firmware/blob/master/u-boot/manifest.json) at Github of known target boards.
   * Injects any needed vendor specific boot binaries from remote sources.
   * Writes directly to an SD card, or to a new image file.
 
