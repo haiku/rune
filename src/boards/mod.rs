@@ -9,10 +9,10 @@
  */
 
 extern crate serde_json;
-extern crate reqwest;
+extern crate curl;
 
-use std::io::Read;
 use std::error::Error;
+use curl::easy::Easy;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Board {
@@ -24,9 +24,20 @@ pub struct Board {
 }
 
 pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
-	let mut resp = reqwest::get(uri.as_str())?;
-	let mut content = String::new();
-	resp.read_to_string(&mut content)?;
+	// Download file per manifest
+	let mut buffer = Vec::new();
+	let mut curl = Easy::new();
+	curl.url(uri.as_str())?;
+	curl.follow_location(true)?;
+	{
+		let mut transfer = curl.transfer();
+		transfer.write_function(|new_data| {
+			buffer.extend_from_slice(new_data);
+			Ok(new_data.len())
+		})?;
+		transfer.perform()?;
+	}
+	let content = String::from_utf8_lossy(&buffer);
 	let results = serde_json::from_str(&content)?;
 	return Ok(results);
 }

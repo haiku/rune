@@ -8,11 +8,11 @@
  *   Alexander von Gluck IV <kallisti5@unixzen.com>
  */
 
+extern crate curl;
 extern crate getopts;
 extern crate mbr;
 extern crate fatfs;
 extern crate regex;
-extern crate reqwest;
 extern crate url;
 extern crate itertools;
 extern crate indicatif;
@@ -27,9 +27,10 @@ use std::process;
 use std::env;
 use std::path::PathBuf;
 use std::io;
-use std::io::{Write,SeekFrom,Seek};
+use std::io::{SeekFrom,Seek};
 use std::fs;
 use std::fs::OpenOptions;
+use curl::easy::Easy;
 use fatfs::{BufStream, FileSystem, FsOptions};
 use getopts::Options;
 use url::Url;
@@ -95,19 +96,28 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 		//println!("  GET {} {:?} to write at {}", url, filename, offset);
 
 		// Download file per manifest
-		let mut resp = reqwest::get(url.as_str())?;
-		if !resp.status().is_success() {
-			return Err(From::from(format!("Error obtaining {}", url)));
+		let mut buffer = Vec::new();
+		let mut curl = Easy::new();
+		curl.url(url.as_str())?;
+		curl.follow_location(true)?;
+		{
+			let mut transfer = curl.transfer();
+			transfer.write_function(|new_data| {
+				buffer.extend_from_slice(new_data);
+				Ok(new_data.len())
+			})?;
+			transfer.perform()?;
 		}
+
 		bar.set_message(&format!("Writing: {}", filename));
 		bar.inc(1);
 
 		// Jump to specified offset in file
 		output_fh.seek(SeekFrom::Start(*offset))?;
 		// Write the raw file to the block device.
-		io::copy(&mut resp, &mut output_fh)?;
+		io::copy(&mut &buffer[..], &mut output_fh)?;
 	}
-    output_fh.sync_data()?;
+	output_fh.sync_data()?;
 
 	if wrote == 0 {
 		bar.set_message(&format!("None required."));
@@ -152,15 +162,24 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		//println!("  GET {} {:?}", url, filename);
 
 		// Download file per manifest
-		let mut resp = reqwest::get(url.as_str())?;
-		if !resp.status().is_success() {
-			return Err(From::from(format!("Error obtaining {}", i)));
+		let mut buffer = Vec::new();
+		let mut curl = Easy::new();
+		curl.url(url.as_str())?;
+		curl.follow_location(true)?;
+		{
+			let mut transfer = curl.transfer();
+			transfer.write_function(|new_data| {
+				buffer.extend_from_slice(new_data);
+				Ok(new_data.len())
+			})?;
+			transfer.perform()?;
 		}
+
 		bar.set_message(&format!("Writing: {}", filename));
 		bar.inc(1);
 
 		let mut target_file = target_fs.root_dir().create_file(filename)?;
-		io::copy(&mut resp, &mut target_file)?;
+		io::copy(&mut &buffer[..], &mut target_file)?;
 	}
 	if wrote == 0 {
 		bar.set_message(&format!("Not required."));
@@ -213,7 +232,7 @@ fn main() {
 	let board = match boards::get_board(board_id) {
 		Ok(x) => x,
 		Err(e) => {
-			println!("Error: {}", e.description());
+			println!("Error: {}", e);
 			process::exit(1);
 		},
 	};
