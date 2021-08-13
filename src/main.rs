@@ -65,7 +65,7 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
 		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
-	bar.set_prefix(&format!("[{}/{}] Provisioning block device...", steps - 1, steps));
+	bar.set_prefix(format!("[{}/{}] Provisioning block device...", steps - 1, steps));
 	let raw_re = Regex::new(r"^(\d+),(.+)$").unwrap();
 
 	let mut output_fh = OpenOptions::new().read(true).write(true).open(disk)?;
@@ -90,7 +90,7 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 			None => return Err(From::from(format!("Invalid URL {}", i))),
 		};
 
-		bar.set_message(&format!("Downloading: {}", filename));
+		bar.set_message(format!("Downloading: {}", filename));
 		bar.inc(1);
 
 		//println!("  GET {} {:?} to write at {}", url, filename, offset);
@@ -109,7 +109,7 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 			transfer.perform()?;
 		}
 
-		bar.set_message(&format!("Writing: {}", filename));
+		bar.set_message(format!("Writing: {}", filename));
 		bar.inc(1);
 
 		// Jump to specified offset in file
@@ -120,9 +120,9 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 	output_fh.sync_data()?;
 
 	if wrote == 0 {
-		bar.set_message(&format!("None required."));
+		bar.set_message(format!("None required."));
 	}
-	bar.set_message(&format!("Success ({} offsets).", wrote));
+	bar.set_message(format!("Success ({} offsets).", wrote));
 
 	bar.finish();
 	return Ok(wrote);
@@ -141,7 +141,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
 		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
-	bar.set_prefix(&format!("[{}/{}] Provisioning filesystem...  ", steps, steps));
+	bar.set_prefix(format!("[{}/{}] Provisioning filesystem...  ", steps, steps));
 	let raw_re = Regex::new(r"^(\d+),(.+)$").unwrap();
 	for i in board.files {
 		if raw_re.is_match(i.as_str()) {
@@ -156,7 +156,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 			None => return Err(From::from(format!("Invalid URL {}", i))),
 		};
 
-		bar.set_message(&format!("Downloading: {}", filename));
+		bar.set_message(format!("Downloading: {}", filename));
 		bar.inc(1);
 
 		//println!("  GET {} {:?}", url, filename);
@@ -175,16 +175,16 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 			transfer.perform()?;
 		}
 
-		bar.set_message(&format!("Writing: {}", filename));
+		bar.set_message(format!("Writing: {}", filename));
 		bar.inc(1);
 
 		let mut target_file = target_fs.root_dir().create_file(filename)?;
 		io::copy(&mut &buffer[..], &mut target_file)?;
 	}
 	if wrote == 0 {
-		bar.set_message(&format!("Not required."));
+		bar.set_message(format!("Not required."));
 	}
-	bar.set_message(&format!("Success ({} files).", wrote));
+	bar.set_message(format!("Success ({} files).", wrote));
 	bar.finish();
 	return Ok(wrote);
 }

@@ -65,13 +65,6 @@ pub fn get_board(board_id: String) -> Result<Board, Box<dyn Error>> {
 	return Err(From::from("Unknown target board!"));
 }
 
-pub fn get_boot_env(fdt: String) -> String {
-	// Fill in any relevant board information
-	vec![
-		format!("dtb=/fdt/{}.dtb", fdt),
-	].join("\n")
-}
-
 pub fn print(arch: String) {
 	print!("{}\n===\n", arch);
 	let arch_boards = match get_arch(arch) {
