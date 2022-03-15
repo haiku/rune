@@ -27,9 +27,10 @@ pub fn locate_boot_partition(disk: PathBuf) -> Result<partition::Partition,Box<d
 	let partitions = partition::read_partitions(disk.clone())?;
 	for (_, partition) in partitions.iter().enumerate() {
 		let sector_size = 512;
-		if partition.p_type != 12 {
-			// Ignore non-fat partitions
-			continue;
+		// Ignore non-efi or non-fat partitions
+		match partition.p_type {
+			0x0b | 0xef => {},
+			_ => continue,
 		}
 		let disk_handle = File::open(disk.clone())?;
 		let mut buf_rdr = BufStream::new(disk_handle);
