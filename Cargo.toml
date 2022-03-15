@@ -10,7 +10,7 @@ getopts = "*"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-curl = "~0.4"
+curl = {version = "~0.4", features = ["static-curl", "static-ssl"]}
 url = "*"
 fatfs = "0.2.0"
 itertools = "0.5.9"
