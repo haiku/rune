@@ -14,6 +14,8 @@ extern crate curl;
 use std::error::Error;
 use curl::easy::Easy;
 
+pub const MANIFEST_URI: &str = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json";
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Board {
 	pub arch: String,
@@ -43,7 +45,7 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
 }
 
 pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
-	let uri = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json".to_string();
+	let uri = MANIFEST_URI.to_string();
 	let boards = get_boards(uri)?;
 	let mut results: Vec<Board> = Vec::new();
 	for i in boards {

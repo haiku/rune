@@ -42,6 +42,14 @@ mod boards;
 mod partition;
 mod image_tools;
 
+fn print_version() {
+	const VERSION: &str = env!("CARGO_PKG_VERSION");
+	println!("Rune v{}", VERSION);
+	println!("Copyright, 2017-2022 Haiku, Inc. All rights reserved.");
+	println!("Released under the terms of the MIT license.");
+	println!("Manifest URI: {}", boards::MANIFEST_URI);
+}
+
 fn print_usage(program: &str, opts: Options) {
 	let brief = format!("rune - write bootable ARM Haiku mmc images\nUsage: {} [options] <output>", program);
 	print!("{}", opts.usage(&brief));
@@ -196,6 +204,7 @@ fn main() {
 	opts.optopt("b", "board", "target board", "<board>");
 	opts.optopt("i", "image", "source OS image", "<image>");
 	opts.optflag("l", "list", "list supported target boards");
+	opts.optflag("v", "version", "show version");
 	opts.optflag("h", "help", "print this help");
 
 	let matches = match opts.parse(&args[1..]) {
@@ -209,6 +218,9 @@ fn main() {
 	// Validate flags
 	if matches.opt_present("h") {
 		print_usage(&program, opts);
+		return;
+	} else if matches.opt_present("v") {
+		print_version();
 		return;
 	} else if matches.opt_present("l") {
 		boards::print("arm".to_string());
