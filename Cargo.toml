@@ -1,6 +1,6 @@
 [package]
 name = "rune"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Alexander von Gluck IV <kallisti5@unixzen.com>"]
 license = "MIT"
 
