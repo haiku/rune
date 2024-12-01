@@ -45,7 +45,7 @@ mod image_tools;
 fn print_version() {
 	const VERSION: &str = env!("CARGO_PKG_VERSION");
 	println!("Rune v{}", VERSION);
-	println!("Copyright, 2017-2022 Haiku, Inc. All rights reserved.");
+	println!("Copyright, 2017-2024 Haiku, Inc. All rights reserved.");
 	println!("Released under the terms of the MIT license.");
 	println!("Manifest URI: {}", boards::MANIFEST_URI);
 }

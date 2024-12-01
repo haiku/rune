@@ -57,7 +57,7 @@ pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
 }
 
 pub fn get_board(board_id: String) -> Result<Board, Box<dyn Error>> {
-	let uri = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json".to_string();
+	let uri = MANIFEST_URI.to_string();
 	let boards = get_boards(uri)?;
 	for i in boards {
 		if i.id == board_id {
