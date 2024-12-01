@@ -35,7 +35,7 @@ use fatfs::{BufStream, FileSystem, FsOptions};
 use getopts::Options;
 use url::Url;
 use indicatif::{ProgressBar,ProgressStyle};
-use partition::Partition;
+use crate::partition::Partition;
 use regex::Regex;
 
 mod boards;
