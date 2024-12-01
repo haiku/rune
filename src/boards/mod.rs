@@ -11,8 +11,10 @@
 extern crate serde_json;
 extern crate curl;
 
+use std::env;
 use std::error::Error;
 use curl::easy::Easy;
+use fs::File;
 
 pub const MANIFEST_URI: &str = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json";
 
@@ -25,7 +27,14 @@ pub struct Board {
 	pub files: Vec<String>,
 }
 
-pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
+fn get_boards_local(path: String) -> Result<Vec<Board>, Box<dyn Error>> {
+    // Get boards from local manifest
+    let file = File::open(path)?;
+    let result: Vec<Board> = serde_json::from_reader(file)?;
+    return Ok(result);
+}
+
+fn get_boards_remote(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
 	// Download file per manifest
 	let mut buffer = Vec::new();
 	let mut curl = Easy::new();
@@ -40,13 +49,19 @@ pub fn get_boards(uri: String) -> Result<Vec<Board>, Box<dyn Error>> {
 		transfer.perform()?;
 	}
 	let content = String::from_utf8_lossy(&buffer);
-	let results = serde_json::from_str(&content)?;
+	let results: Vec<Board> = serde_json::from_str(&content)?;
 	return Ok(results);
 }
 
+pub fn get_boards() -> Result<Vec<Board>, Box<dyn Error>> {
+    return match env::var("RUNE_BOARD_FILE") {
+        Ok(v) => get_boards_local(v),
+        Err(_) => get_boards_remote(MANIFEST_URI.to_string())
+    }
+}
+
 pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
-	let uri = MANIFEST_URI.to_string();
-	let boards = get_boards(uri)?;
+	let boards = get_boards()?;
 	let mut results: Vec<Board> = Vec::new();
 	for i in boards {
 		if i.arch == arch {
@@ -57,8 +72,7 @@ pub fn get_arch(arch: String) -> Result<Vec<Board>, Box<dyn Error>> {
 }
 
 pub fn get_board(board_id: String) -> Result<Board, Box<dyn Error>> {
-	let uri = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json".to_string();
-	let boards = get_boards(uri)?;
+	let boards = get_boards()?;
 	for i in boards {
 		if i.id == board_id {
 			return Ok(i);
