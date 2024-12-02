@@ -14,7 +14,7 @@ extern crate curl;
 use std::env;
 use std::error::Error;
 use curl::easy::Easy;
-use fs::File;
+use crate::fs::File;
 
 pub const MANIFEST_URI: &str = "https://github.com/haiku/firmware/raw/master/u-boot/manifest.json";
 
