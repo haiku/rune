@@ -27,6 +27,7 @@ pub struct Board {
 	pub files: Vec<String>,
 }
 
+// sort boards based on ID only
 impl Ord for Board {
 	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
 		(self.id).cmp(&(other.id))
