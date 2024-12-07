@@ -129,7 +129,6 @@ pub fn print() {
 
 	print!("  {:20} {:10} {:20}\n", "Board", "SOC", "Name");
 	for arch in architectures {
-		// TODO: get list of all architectures, print 
 		let arch_boards = match get_arch(arch.clone()) {
 			Ok(m) => { m },
 			Err(e) => { println!("  Error: {}", e); return },
