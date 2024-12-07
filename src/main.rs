@@ -223,8 +223,7 @@ fn main() {
 		print_version();
 		return;
 	} else if matches.opt_present("l") {
-        //XXX This needs to be better and dynamic!
-		boards::print("arm".to_string());
+		boards::print();
 		process::exit(1);
 	}
 
