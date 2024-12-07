@@ -35,7 +35,7 @@ use fatfs::{BufStream, FileSystem, FsOptions};
 use getopts::Options;
 use url::Url;
 use indicatif::{ProgressBar,ProgressStyle};
-use partition::Partition;
+use crate::partition::Partition;
 use regex::Regex;
 
 mod boards;
@@ -223,8 +223,7 @@ fn main() {
 		print_version();
 		return;
 	} else if matches.opt_present("l") {
-        //XXX This needs to be better and dynamic!
-		boards::print("arm".to_string());
+		boards::print();
 		process::exit(1);
 	}
 
