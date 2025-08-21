@@ -70,7 +70,7 @@ fn write_files(board: boards::Board, disk: PathBuf, steps: u32)
 	let mut wrote = count;
 	let bar = ProgressBar::new((count * 2) as u64);
 	bar.set_style(ProgressStyle::default_bar()
-		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
+		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")?
 		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
 	bar.set_prefix(format!("[{}/{}] Provisioning block device...", steps - 1, steps));
@@ -146,7 +146,7 @@ fn place_files(board: boards::Board, target_fs: &mut fatfs::FileSystem, steps: u
 	let mut wrote = count;
 	let bar = ProgressBar::new((count * 2) as u64);
 	bar.set_style(ProgressStyle::default_bar()
-		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")
+		.template("{prefix} {spinner:.bold}[{bar:40.cyan/blue}] {msg:.bold.dim}")?
 		.tick_chars("◐◓◑◒")
 		.progress_chars("#>-"));
 	bar.set_prefix(format!("[{}/{}] Provisioning filesystem...  ", steps, steps));
